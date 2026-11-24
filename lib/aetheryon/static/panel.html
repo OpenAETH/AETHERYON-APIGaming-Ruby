@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panel de fuentes · AETHERYON Gaming News</title>
+<style>
+:root{--bg:#0b1118;--panel:#111b26;--line:#1e2d3d;--ink:#dce8f2;--mute:#7f93a6;--cy:#00e5ff;
+--ok:#3ddc97;--warn:#ffb454;--bad:#ff6b6b;--idle:#8896a5;color-scheme:dark}
+@media (prefers-color-scheme:light){:root{--bg:#f2f6fa;--panel:#fff;--line:#d5dee8;--ink:#13202d;--mute:#5a6b7c;--cy:#007c8c;
+--ok:#16915f;--warn:#a8600a;--bad:#c23b3b;--idle:#5f6e7d;color-scheme:light}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+header{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;padding:18px 24px;border-bottom:1px solid var(--line)}
+h1{font-size:18px;margin:0;font-weight:650;letter-spacing:.01em}
+h1 span{color:var(--cy)}
+h2{font-size:15px;margin:0 0 10px;font-weight:650}
+main{padding:20px 24px;display:grid;gap:22px;max-width:1200px;margin:auto}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-left:auto}
+input,button{font:inherit;color:inherit;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:6px 10px}
+button{cursor:pointer}button:hover{border-color:var(--cy)}
+button.primary{background:var(--cy);color:#00161a;border-color:var(--cy);font-weight:650}
+button:disabled{opacity:.5;cursor:not-allowed}
+:focus-visible{outline:2px solid var(--cy);outline-offset:2px}
+.run{display:flex;flex-wrap:wrap;gap:6px 22px;color:var(--mute)}
+.run b{color:var(--ink);font-weight:600}
+.scroll{overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:var(--panel)}
+table{width:100%;border-collapse:collapse;min-width:760px}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--mute);font-weight:500;font-size:13px}
+tr:last-child td{border-bottom:0}
+.pill{display:inline-flex;gap:6px;align-items:center;font-size:13px;white-space:nowrap}
+.pill i{width:9px;height:9px;border-radius:50%;background:var(--c)}
+.err{color:var(--bad);font-size:13px;max-width:340px;overflow-wrap:anywhere}
+.mute{color:var(--mute)}
+.q{height:6px;background:var(--line);border-radius:3px;overflow:hidden;width:120px;margin-top:4px}
+.q div{height:100%;background:var(--cy)}
+form{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+#msg{min-height:1.4em;color:var(--mute)}
+</style>
+</head>
+<body>
+<header>
+  <h1><span>AETHERYON</span> Gaming News · fuentes</h1>
+  <div class="bar">
+    <label class="mute" for="key">Clave de administración</label>
+    <input id="key" type="password" autocomplete="off" placeholder="X-API-Key" size="18">
+    <button id="collect" class="primary">Recolectar ahora</button>
+  </div>
+</header>
+<main>
+  <p id="msg" role="status"></p>
+  <section><h2>Última sincronización</h2><div id="run" class="run"></div></section>
+  <section><h2>Fuentes</h2><div class="scroll"><table><thead><tr>
+    <th>Fuente</th><th>Estado</th><th>Última sync</th><th>Obtenidas</th><th>Guardadas</th><th>Detalle</th><th></th></tr></thead>
+    <tbody id="sources"></tbody></table></div></section>
+  <section><h2>Catálogo de juegos</h2><div class="scroll"><table><thead><tr>
+    <th>Juego</th><th>AppID</th><th>Plataforma</th><th>Estado</th><th>Noticias</th><th>Último error</th></tr></thead>
+    <tbody id="games"></tbody></table></div>
+    <form id="addgame"><input name="name" placeholder="Nombre" required>
+      <input name="url" placeholder="URL de Steam (opcional)" size="32">
+      <input name="appid" type="number" min="1" placeholder="AppID (opcional)">
+      <button>Agregar juego</button></form></section>
+</main>
+<script>
+const $=s=>document.querySelector(s), key=$('#key');
+key.value=sessionStorage.getItem('k')||''; key.oninput=()=>sessionStorage.setItem('k',key.value);
+const COL={ok:['Funcionando','--ok'],degraded:['Con avisos','--warn'],error:['Con error','--bad'],blocked:['Bloqueada','--idle'],
+ paused:['Pausada','--idle'],quota_exhausted:['Cuota agotada','--warn'],pending:['Sin datos aún','--idle'],success:['Correcta','--ok'],
+ partial:['Parcial','--warn'],failed:['Fallida','--bad'],running:['En curso','--cy'],unresolved:['AppID sin resolver','--warn'],active:['Activo','--ok']};
+function el(t,a={},...k){const e=document.createElement(t);for(const[n,v]of Object.entries(a))n==='class'?e.className=v:e.setAttribute(n,v);
+ for(const c of k.flat())e.append(c instanceof Node?c:document.createTextNode(c??''));return e}
+function pill(s){const[t,c]=COL[s]||[s,'--idle'];const p=el('span',{class:'pill'},el('i'),t);p.firstChild.style.setProperty('--c',`var(${c})`);return p}
+const ago=d=>{if(!d)return'—';const m=Math.round((Date.now()-new Date(d))/6e4);return m<1?'hace instantes':m<60?`hace ${m} min`:m<1440?`hace ${Math.round(m/60)} h`:`hace ${Math.round(m/1440)} d`};
+const msg=t=>$('#msg').textContent=t;
+async function api(path,opt={}){const h={'Content-Type':'application/json'};if(key.value)h['X-API-Key']=key.value;
+ const r=await fetch(path,{...opt,headers:h});const b=r.status===204?null:await r.json().catch(()=>null);
+ if(!r.ok)throw new Error(b?.detail||`Error ${r.status}`);return b}
+async function act(btn,fn,ok){btn.disabled=true;try{const r=await fn();msg(ok(r));}catch(e){msg(e.message)}btn.disabled=false;load()}
+async function load(){
+ try{
+  const [src,st,games]=await Promise.all([api('/api/sources'),api('/api/sync/status'),api('/api/games')]);
+  const r=st.last_run;$('#collect').disabled=st.running;
+  $('#run').replaceChildren(...(r?[el('span',{},'Estado: ',pill(st.running?'running':r.status)),el('span',{},'Inicio: ',el('b',{},ago(r.started_at))),
+   el('span',{},'Nuevas: ',el('b',{},r.summary?.new??'—')),el('span',{},'Duplicadas: ',el('b',{},r.summary?.duplicates??'—')),
+   el('span',{},'Noticias guardadas: ',el('b',{},st.total_articles))]:[el('span',{class:'mute'},'Todavía no hubo sincronizaciones. Usá “Recolectar ahora”.')]));
+  $('#sources').replaceChildren(...src.map(s=>{
+   const detail=el('div',{},s.unavailable_reason||s.last_error?el('div',{class:'err'},s.unavailable_reason||s.last_error):'',
+     s.quota?el('div',{class:'mute'},`Cuota hoy: ${s.quota.used_today}/${s.quota.daily_limit}`,el('div',{class:'q'},el('div',{style:`width:${Math.min(100,100*s.quota.used_today/s.quota.daily_limit)}%`}))):'');
+   const t=el('button',{},'Probar'),p=el('button',{},s.enabled?'Pausar':'Activar');
+   t.onclick=()=>act(t,()=>api(`/api/sources/${s.key}/test`,{method:'POST'}),r=>r.ok?`${s.name}: ${r.fetched} noticias en la prueba`:`${s.name}: ${r.error}`);
+   p.onclick=()=>act(p,()=>api(`/api/sources/${s.key}/${s.enabled?'pause':'enable'}`,{method:'POST'}),()=>`${s.name}: ${s.enabled?'pausada':'activada'}`);
+   return el('tr',{},el('td',{},el('b',{},s.name),el('div',{class:'mute'},s.kind==='rss'?'RSS':'API')),el('td',{},pill(s.enabled?s.status:'paused')),
+    el('td',{},ago(s.last_sync_at)),el('td',{},String(s.last_items)),el('td',{},String(s.stored_articles)),el('td',{},detail),el('td',{},el('div',{class:'bar'},t,p)))}));
+  $('#games').replaceChildren(...(games.length?games.map(g=>el('tr',{},el('td',{},g.name),el('td',{},g.appid??'—'),el('td',{},g.platform),
+   el('td',{},pill(g.status)),el('td',{},String(g.news_count)),el('td',{class:'err'},g.last_error||'')))
+   :[el('tr',{},el('td',{colspan:6,class:'mute'},'Sin juegos. Agregá uno con su nombre, URL de Steam o AppID.'))]));
+ }catch(e){msg(e.message)}}
+$('#collect').onclick=e=>act(e.target,()=>api('/api/collect',{method:'POST',body:'{}'}),r=>`Recolección #${r.run_id} iniciada`);
+$('#addgame').onsubmit=e=>{e.preventDefault();const f=new FormData(e.target),b={name:f.get('name')};
+ if(f.get('url'))b.url=f.get('url');if(f.get('appid'))b.appid=+f.get('appid');
+ act(e.target.querySelector('button'),()=>api('/api/games',{method:'POST',body:JSON.stringify(b)}),
+  g=>g.resolved?`${g.name}: AppID ${g.appid} registrado`:`${g.name}: no se pudo resolver el AppID, cargalo manualmente`);e.target.reset()};
+load();setInterval(load,15000);
+</script>
+</body>
+</html>

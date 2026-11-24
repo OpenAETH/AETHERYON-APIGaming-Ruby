@@ -1,0 +1,3 @@
+'''bundle install''' (primera vez)
+-----
+'''bundle exec puma -C config/puma.rb'''

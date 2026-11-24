@@ -1,0 +1,35 @@
+services:
+  gaming-news-api:
+    build: .
+    image: aetheryon/gaming-news-api:1.0
+    restart: unless-stopped          # reinicio seguro tras caídas
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://aetheryon:${POSTGRES_PASSWORD:-aetheryon}@db:5432/aetheryon
+      DATA_DIR: /data
+    depends_on:
+      db:
+        condition: service_healthy
+    ports: ["8000:8000"]
+    volumes:
+      - news_data:/data              # caché del catálogo de Steam
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "5"}
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: aetheryon
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-aetheryon}
+      POSTGRES_DB: aetheryon
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aetheryon -d aetheryon"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+volumes:
+  news_data:
+  pg_data:
